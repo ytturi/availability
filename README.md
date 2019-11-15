@@ -4,7 +4,7 @@ To be used command-line or as a daemon.
 
 Will try to connect to a server and disconnect without sending information.
 
-Output can be logged (File or Screen) as human-readable 
+Output can be logged (File or Screen) as human-readable
 Output can be saved/sent as a metric.
 
 ## Availability metric

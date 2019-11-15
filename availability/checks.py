@@ -19,3 +19,7 @@ def check_available(addr, port):
         return True
     except OSError:
         return False
+
+
+def check_available_async(addr, port):
+    return addr, port, check_available(addr, port)

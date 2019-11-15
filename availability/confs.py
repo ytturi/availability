@@ -7,6 +7,7 @@
 # -----------------------------------------------------------------------------
 from configparser import RawConfigParser
 from os.path import expanduser
+from multiprocessing import cpu_count
 
 import logging
 
@@ -21,6 +22,7 @@ path: False # Print to screen
 [CONNECTION]
 proto: tcp
 timeout: 1 # Seconds
+workers: 4
 [SERVERS]
 # server.to.check: port
 """)
@@ -115,3 +117,12 @@ def get_timeout():
         if config.has_option(section, option):
             timeout = int(config.get(section, option))
     return timeout
+
+def get_workers():
+    workers = cpu_count()
+    section = 'CONNECTION'
+    option = 'workers'
+    if config.has_section(section):
+        if config.has_option(section, option):
+            workers = int(config.get(section, option))
+    return workers
