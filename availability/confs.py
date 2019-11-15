@@ -109,6 +109,19 @@ def get_servers(additional_servers=None):
 
 # CONNECTION
 
+def get_duration(default_duration=False):
+    duration = 0
+    section = 'CONNECTION'
+    option = 'duration'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        duration = int(config.get(section, option))
+    if duration != default_duration and default_duration:
+        config.set(section, option, default_duration)
+    duration = default_duration or duration
+    return duration
+
 def get_timeout():
     timeout = 1
     section = 'CONNECTION'
@@ -118,11 +131,15 @@ def get_timeout():
             timeout = int(config.get(section, option))
     return timeout
 
-def get_workers():
-    workers = cpu_count()
+def get_workers(default_workers=False):
+    workers = 1
     section = 'CONNECTION'
     option = 'workers'
-    if config.has_section(section):
-        if config.has_option(section, option):
-            workers = int(config.get(section, option))
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        workers = int(config.get(section, option))
+    if workers != default_workers and default_workers:
+        config.set(section, option, default_workers)
+    workers = default_workers or workers or cpu_count()
     return workers
