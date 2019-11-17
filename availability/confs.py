@@ -26,6 +26,8 @@ timeout: 1
 duration: 10
 workers: 4
 [METRICS]
+store: file
+store-file: /tmp/metrics
 interval: 10
 format: graphite
 prefix: health.{host}.{port}
@@ -167,6 +169,28 @@ def get_workers(default_workers=False):
     return workers
 
 # METRICS
+
+def get_metrics_store():
+    metrics_store = False
+    section = 'METRICS'
+    option = 'store'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_store = config.get(section, option).lower()
+    return metrics_store
+
+def get_metrics_file():
+    metrics_file = False
+    section = 'METRICS'
+    option = 'store-file'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_file = config.get(section, option)
+    if not metrics_file:
+        logger.warning('Parameter "store-file" is not set! Using a generated name')
+    return metrics_file
 
 def get_metric_interval():
     metrics_interval = 1

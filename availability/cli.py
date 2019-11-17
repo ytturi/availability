@@ -9,7 +9,7 @@ from availability.confs import init_configs, read_configs, init_logger
 from availability.confs import get_servers, get_workers, get_duration
 from availability.confs import get_chk_interval
 from availability.checks import check_available, check_available_async
-from availability.metrics import dict_to_metrics_str
+from availability.metrics import dict_to_metrics, export_metrics
 
 from multiprocessing.pool import ThreadPool
 from logging import getLogger
@@ -96,8 +96,10 @@ def ac(**kwargs):
         check_results = {
             str(int(time())): perform_checks(servers, multithread=True)
         }
+    metrics = dict_to_metrics(check_results)
     logger.debug(check_results)
-    logger.debug('Metrics:\n{}'.format(dict_to_metrics_str(check_results)))
+    logger.debug('Metrics:\n{}'.format('\n'.join(metrics)))
+    export_metrics(metrics)
 
 
 if __name__ == '__main__':
