@@ -18,7 +18,7 @@ SAMPLE_CFG = (
 [LOGGING]
 level: INFO
 format: [%(asctime)s][%(name)s][%(levelname)s]: %(message)s
-path: False # Print to screen
+path: /var/log/ac.log
 [CONNECTION]
 proto: tcp
 interval: 1

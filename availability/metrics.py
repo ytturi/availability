@@ -89,13 +89,23 @@ def export_metrics(metrics):
 ## FILE
 
 def export_metrics_file(metrics):
+    if not metrics:
+        return
     filename = get_metrics_file()
     if not filename:
         filename = '{}.{}'.format(get_metric_name(), int(time()))
         logger.warning('Saved metrics into: "{}"'.format(filename))
     with open(filename, 'a') as metrics_file:
+        metrics_file.write('\n')
         metrics_file.write('\n'.join(metrics))
 
-## GRAPHITE
+## GRAPHITE && PROMETHEUS == Send to store via TCP
 
-## PROMETHEUS
+def export_metrics_store(metrics):
+    # Open socket to store and port
+    # CONF: get_metrics_store, get_metrics_port
+    pass
+    #s = socket()
+    #for metric in metrics:
+        #s.write(metric)
+    #s.close()

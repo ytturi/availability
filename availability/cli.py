@@ -20,9 +20,9 @@ import click
 logger = getLogger('RUN')
 
 
-
 def initialize(
-    init, config_file, verbose, debug, servers, workers, duration, interval
+    init, config_file, verbose, debug, servers, workers,
+    duration, interval, daemon
 ):
     if init:
         init_configs(init)
@@ -39,6 +39,7 @@ def initialize(
     logger.debug('Servers:  {}'.format(servers))
     logger.debug('INITIALIZED')
     return servers
+
 
 def perform_checks(servers, multithread=False):
     if multithread:
@@ -59,6 +60,7 @@ def perform_checks(servers, multithread=False):
         logger.debug('{} {} = {}'.format(server, port, check))
     return results
 
+
 def inf_time_checks(servers):
     global check_results
     global stop_checking
@@ -69,6 +71,43 @@ def inf_time_checks(servers):
             break
     return check_results
 
+
+def run_once(servers):
+    # Empty data
+    global stop_checking
+    global check_results
+    stop_checking = False
+    check_results = {}
+    # Use a once test if no duration, else keep runing per interval
+    if get_duration():
+        # Query the server
+        t = Thread(target=inf_time_checks, args=(servers,))
+        t.start()
+        # Wait until all checks are done
+        sleep(get_duration())
+        stop_checking = True
+        t.join()
+    else:
+        check_results = {
+            str(int(time())): perform_checks(servers, multithread=True)
+        }
+    # Retrieve metrics from the checks
+    metrics = dict_to_metrics(check_results)
+    logger.debug(check_results)
+    logger.debug('Metrics:\n{}'.format('\n'.join(metrics)))
+    # Export to a file or a metrics storage
+    export_metrics(metrics)
+    logger.info('{} Metrics exported'.format(len(metrics)))
+
+
+def run_daemonic(**kwargs):
+    servers = initialize(**kwargs)
+    global stop_checking
+    global check_results
+    while True:
+        run_once(servers)
+
+
 @click.command()
 @click.option('-i', '--init', type=str, help='Initialize a demo Config File to use')
 @click.option('-c', '--config-file', type=str, help='Config File to use')
@@ -77,30 +116,20 @@ def inf_time_checks(servers):
 @click.option('-s', '--interval', type=int, default=1, help='Time to sleep between checks')
 @click.option('-v', '--verbose', is_flag=True, help='Add verbosity to log (log-level INFO)')
 @click.option('-d', '--debug', is_flag=True, help='Set logger to DEBUG')
+@click.option('--daemon', is_flag=True, help='Set logger to DEBUG')
 @click.option(
     'servers', '--server', type=(str, int), multiple=True,
     help='Server to check. Can have multiple values. Input as <hostname> <port>')
 def ac(**kwargs):
-    servers = initialize(**kwargs)
-    if get_duration():
-        global stop_checking
-        stop_checking = False
-        global check_results
-        check_results = {}
-        t = Thread(target=inf_time_checks, args=(servers,))
-        t.start()
-        sleep(get_duration())
-        stop_checking = True
-        t.join()
+    if kwargs['daemon']:
+        import daemon
+        import signal
+        context = daemon.DaemonContext()
+        with context:
+            run_daemonic(**kwargs)
     else:
-        check_results = {
-            str(int(time())): perform_checks(servers, multithread=True)
-        }
-    metrics = dict_to_metrics(check_results)
-    logger.debug(check_results)
-    logger.debug('Metrics:\n{}'.format('\n'.join(metrics)))
-    export_metrics(metrics)
-
+        servers = initialize(**kwargs)
+        run_once(servers)
 
 if __name__ == '__main__':
     ac()
