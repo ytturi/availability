@@ -7,8 +7,9 @@
 # -----------------------------------------------------------------------------
 from availability.confs import init_configs, read_configs, init_logger
 from availability.confs import get_servers, get_workers, get_duration
-from availability.confs import get_interval
+from availability.confs import get_chk_interval
 from availability.checks import check_available, check_available_async
+from availability.metrics import dict_to_metrics_str
 
 from multiprocessing.pool import ThreadPool
 from logging import getLogger
@@ -31,7 +32,7 @@ def initialize(
     servers = get_servers(servers)
     workers = get_workers(workers)
     duration = get_duration(duration)
-    sleep_time = get_interval(interval)
+    sleep_time = get_chk_interval(interval)
     logger.debug('Interval: {}'.format(sleep_time))
     logger.debug('Time:     {}'.format(duration))
     logger.debug('Workers:  {}'.format(workers))
@@ -63,7 +64,7 @@ def inf_time_checks(servers):
     global stop_checking
     while True:
         check_results['{}'.format(int(time()))] = perform_checks(servers, multithread=True)
-        sleep(get_interval())
+        sleep(get_chk_interval())
         if stop_checking:
             break
     return check_results
@@ -92,8 +93,11 @@ def ac(**kwargs):
         stop_checking = True
         t.join()
     else:
-        check_results = perform_checks(servers, multithread=True)
+        check_results = {
+            str(int(time())): perform_checks(servers, multithread=True)
+        }
     logger.debug(check_results)
+    logger.debug('Metrics:\n{}'.format(dict_to_metrics_str(check_results)))
 
 
 if __name__ == '__main__':
