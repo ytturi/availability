@@ -21,7 +21,9 @@ format: [%(asctime)s][%(name)s][%(levelname)s]: %(message)s
 path: False # Print to screen
 [CONNECTION]
 proto: tcp
-timeout: 1 # Seconds
+interval: 1
+timeout: 1
+duration: 1
 workers: 4
 [SERVERS]
 # server.to.check: port
@@ -121,6 +123,21 @@ def get_duration(default_duration=False):
         config.set(section, option, default_duration)
     duration = default_duration or duration
     return duration
+
+
+def get_interval(default_interval=False):
+    interval = 0
+    section = 'CONNECTION'
+    option = 'interval'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        interval = int(config.get(section, option))
+    if interval != default_interval and default_interval:
+        config.set(section, option, default_interval)
+    interval = default_interval or interval
+    return interval
+
 
 def get_timeout():
     timeout = 1
