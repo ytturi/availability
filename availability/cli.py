@@ -7,7 +7,9 @@
 # -----------------------------------------------------------------------------
 from availability.confs import init_configs, read_configs, init_logger
 from availability.confs import get_servers, get_workers, get_duration
+from availability.confs import get_chk_interval
 from availability.checks import check_available, check_available_async
+from availability.metrics import dict_to_metrics, export_metrics
 
 from multiprocessing.pool import ThreadPool
 from logging import getLogger
@@ -20,7 +22,7 @@ logger = getLogger('RUN')
 
 
 def initialize(
-    init, config_file, verbose, debug, servers, workers, duration
+    init, config_file, verbose, debug, servers, workers, duration, interval
 ):
     if init:
         init_configs(init)
@@ -30,9 +32,11 @@ def initialize(
     servers = get_servers(servers)
     workers = get_workers(workers)
     duration = get_duration(duration)
-    logger.debug('Time:   \t{}'.format(duration))
-    logger.debug('Workers:\t{}'.format(workers))
-    logger.debug('Servers:\t{}'.format(servers))
+    sleep_time = get_chk_interval(interval)
+    logger.debug('Interval: {}'.format(sleep_time))
+    logger.debug('Time:     {}'.format(duration))
+    logger.debug('Workers:  {}'.format(workers))
+    logger.debug('Servers:  {}'.format(servers))
     logger.debug('INITIALIZED')
     return servers
 
@@ -60,7 +64,7 @@ def inf_time_checks(servers):
     global stop_checking
     while True:
         check_results['{}'.format(int(time()))] = perform_checks(servers, multithread=True)
-        sleep(1)
+        sleep(get_chk_interval())
         if stop_checking:
             break
     return check_results
@@ -70,6 +74,7 @@ def inf_time_checks(servers):
 @click.option('-c', '--config-file', type=str, help='Config File to use')
 @click.option('-w', '--workers', type=int, help='Number of workers to check connections')
 @click.option('-t', '--duration', type=int, help='Repeat for all this time')
+@click.option('-s', '--interval', type=int, default=1, help='Time to sleep between checks')
 @click.option('-v', '--verbose', is_flag=True, help='Add verbosity to log (log-level INFO)')
 @click.option('-d', '--debug', is_flag=True, help='Set logger to DEBUG')
 @click.option(
@@ -88,8 +93,13 @@ def ac(**kwargs):
         stop_checking = True
         t.join()
     else:
-        check_results = perform_checks(servers, multithread=True)
+        check_results = {
+            str(int(time())): perform_checks(servers, multithread=True)
+        }
+    metrics = dict_to_metrics(check_results)
     logger.debug(check_results)
+    logger.debug('Metrics:\n{}'.format('\n'.join(metrics)))
+    export_metrics(metrics)
 
 
 if __name__ == '__main__':

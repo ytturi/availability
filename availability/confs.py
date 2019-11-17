@@ -21,8 +21,17 @@ format: [%(asctime)s][%(name)s][%(levelname)s]: %(message)s
 path: False # Print to screen
 [CONNECTION]
 proto: tcp
-timeout: 1 # Seconds
+interval: 1
+timeout: 1
+duration: 10
 workers: 4
+[METRICS]
+store: file
+store-file: /tmp/metrics
+interval: 10
+format: graphite
+prefix: health.{host}.{port}
+name: availabile
 [SERVERS]
 # server.to.check: port
 """)
@@ -122,6 +131,21 @@ def get_duration(default_duration=False):
     duration = default_duration or duration
     return duration
 
+
+def get_chk_interval(default_interval=False):
+    interval = 0
+    section = 'CONNECTION'
+    option = 'interval'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        interval = int(config.get(section, option))
+    if interval != default_interval and default_interval:
+        config.set(section, option, default_interval)
+    interval = default_interval or interval
+    return interval
+
+
 def get_timeout():
     timeout = 1
     section = 'CONNECTION'
@@ -143,3 +167,68 @@ def get_workers(default_workers=False):
         config.set(section, option, default_workers)
     workers = default_workers or workers or cpu_count()
     return workers
+
+# METRICS
+
+def get_metrics_store():
+    metrics_store = False
+    section = 'METRICS'
+    option = 'store'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_store = config.get(section, option).lower()
+    return metrics_store
+
+def get_metrics_file():
+    metrics_file = False
+    section = 'METRICS'
+    option = 'store-file'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_file = config.get(section, option)
+    if not metrics_file:
+        logger.warning('Parameter "store-file" is not set! Using a generated name')
+    return metrics_file
+
+def get_metric_interval():
+    metrics_interval = 1
+    section = 'METRICS'
+    option = 'interval'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_interval = int(config.get(section, option))
+    return metrics_interval
+
+def get_metric_fmt():
+    metrics_format = 'graphite'
+    section = 'METRICS'
+    option = 'format'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        metrics_format = config.get(section, option).lower()
+    return metrics_format
+
+
+def get_metric_prefix():
+    prefix = 'health.{host}.{port}'
+    section = 'METRICS'
+    option = 'prefix'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        prefix = config.get(section, option)
+    return prefix
+
+def get_metric_name():
+    name = 'availabile'
+    section = 'METRICS'
+    option = 'name'
+    if not config.has_section(section):
+        config.add_section(section)
+    if config.has_option(section, option):
+        name = config.get(section, option)
+    return name
